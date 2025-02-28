@@ -225,7 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Role',
-                      prefixIcon: Icon(Icons.work),
+                      prefixIcon: Icon(Icons.badge),
                       border: OutlineInputBorder(),
                     ),
                     value: _selectedRole,
@@ -241,6 +241,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       DropdownMenuItem(
                         value: 'admin',
                         child: Text('Admin'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'director',
+                        child: Text('Director (Owner)'),
                       ),
                     ],
                     onChanged: (value) {

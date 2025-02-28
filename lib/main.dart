@@ -1,31 +1,48 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 import '../models/log.dart';
 import '../services/api_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'models/user.dart';
+import 'dart:io';
+import 'widgets/notification_bell.dart';
+import 'services/notification_service.dart';
 
-void main() {
-  runApp(const WoodManagementApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.init();
+  
+  // For development only - bypass SSL certificate verification
+  HttpOverrides.global = MyHttpOverrides();
+  
+  runApp(const NgaraTimberApp());
 }
 
-class WoodManagementApp extends StatelessWidget {
-  const WoodManagementApp({super.key});
+// Only use this class during development
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+class NgaraTimberApp extends StatelessWidget {
+  const NgaraTimberApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wood Management',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.brown,
-          primary: Colors.brown,
-          secondary: Colors.green.shade700,
-        ),
-        useMaterial3: true,
-      ),
+      title: 'NgaraTimber',
+      theme: AppTheme.getTheme(),
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );
@@ -63,32 +80,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wood Management'),
+        title: const Text('NgaraTimber'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // Show notifications
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_circle),
-            onPressed: () {
-              // Show profile
-            },
-          ),
+        actions: const [
+          NotificationBell(),
+          SizedBox(width: 8),
         ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          DashboardScreen(),
-          LogTrackingScreen(),
-          InventoryScreen(),
-          ProductionScreen(),
-          CustomersScreen(),
+        children: [
+          DashboardScreen(user: _currentUser),
+          const LogTrackingScreen(),
+          const InventoryScreen(),
+          const ProductionScreen(),
+          const CustomersScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -125,169 +132,270 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // Home/Dashboard Screen
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+class DashboardScreen extends StatefulWidget {
+  final User? user;
+  
+  const DashboardScreen({super.key, this.user});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  // Sample data for dashboard
+  final Map<String, int> _inventorySummary = {
+    'Raw Materials': 25,
+    'Finished Products': 42,
+    'Low Stock Items': 8,
+  };
+  
+  final Map<String, int> _logsSummary = {
+    'In Stock': 35,
+    'In Production': 12,
+    'Sold': 18,
+  };
+  
+  final Map<String, double> _productionSummary = {
+    'Not Started': 5,
+    'In Progress': 8,
+    'On Hold': 2,
+    'Completed': 15,
+  };
+  
+  final List<Map<String, dynamic>> _recentOrders = [
+    {
+      'id': 'ORD-001',
+      'customer': 'John Smith',
+      'date': '2023-06-15',
+      'amount': 1250.00,
+      'status': 'Delivered',
+    },
+    {
+      'id': 'ORD-002',
+      'customer': 'Acme Furniture',
+      'date': '2023-06-18',
+      'amount': 3450.75,
+      'status': 'Processing',
+    },
+    {
+      'id': 'ORD-003',
+      'customer': 'Jane Doe',
+      'date': '2023-06-20',
+      'amount': 875.50,
+      'status': 'Pending',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Dashboard Overview',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Quick Stats Cards
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Implement refresh logic here
+          await Future.delayed(const Duration(seconds: 1));
+          setState(() {
+            // Update data if needed
+          });
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatCard(
-                context,
-                'Logs in Inventory',
-                '245',
-                Icons.forest,
-                Colors.green,
-              ),
-              _buildStatCard(
-                context,
-                'Products in Progress',
-                '32',
-                Icons.construction,
-                Colors.orange,
-              ),
-              _buildStatCard(
-                context,
-                'Completed Orders',
-                '18',
-                Icons.check_circle,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                context,
-                'Pending Orders',
-                '7',
-                Icons.pending_actions,
-                Colors.red,
-              ),
+              // Welcome card
+              _buildWelcomeCard(),
+              const SizedBox(height: 24),
+              
+              // Quick stats
+              _buildQuickStats(),
+              const SizedBox(height: 24),
+              
+              // Inventory summary
+              _buildSectionTitle('Inventory Summary'),
+              _buildSummaryCards(_inventorySummary, Colors.blue),
+              const SizedBox(height: 24),
+              
+              // Logs summary
+              _buildSectionTitle('Logs Summary'),
+              _buildSummaryCards(_logsSummary, AppTheme.primaryColor),
+              const SizedBox(height: 24),
+              
+              // Production summary
+              _buildSectionTitle('Production Summary'),
+              _buildSummaryCards(_productionSummary.map((key, value) => 
+                MapEntry(key, value.toInt())), AppTheme.secondaryColor),
+              const SizedBox(height: 24),
+              
+              // Recent orders
+              _buildSectionTitle('Recent Orders'),
+              _buildRecentOrders(),
             ],
           ),
-          
-          const SizedBox(height: 20),
-          
-          // Recent Activity Section
-          const Text(
-            'Recent Activity',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          _buildActivityItem(
-            'New log shipment received',
-            '2 hours ago',
-            Icons.local_shipping,
-          ),
-          _buildActivityItem(
-            'Order #1234 completed',
-            '5 hours ago',
-            Icons.check_circle,
-          ),
-          _buildActivityItem(
-            'Inventory count updated',
-            'Yesterday',
-            Icons.update,
-          ),
-          _buildActivityItem(
-            'New customer order received',
-            'Yesterday',
-            Icons.shopping_cart,
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Quick Actions
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildQuickAction(
-                context,
-                'Add Log',
-                Icons.add_circle,
-                () {
-                  // TODO: Navigate to add log screen
-                },
-              ),
-              _buildQuickAction(
-                context,
-                'New Order',
-                Icons.post_add,
-                () {
-                  // TODO: Navigate to new order screen
-                },
-              ),
-              _buildQuickAction(
-                context,
-                'Reports',
-                Icons.bar_chart,
-                () {
-                  // TODO: Navigate to reports screen
-                },
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildWelcomeCard() {
+    final now = DateTime.now();
+    String greeting;
+    
+    if (now.hour < 12) {
+      greeting = 'Good Morning';
+    } else if (now.hour < 17) {
+      greeting = 'Good Afternoon';
+    } else {
+      greeting = 'Good Evening';
+    }
+    
     return Card(
       elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.primaryColor.withOpacity(0.7),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 40, color: color),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 24,
+                  child: Text(
+                    widget.user?.username.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting,',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    Text(
+                      widget.user?.fullName ?? widget.user?.username ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Welcome to NgaraTimber Dashboard',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 8),
+            Text(
+              'Today is ${_formatDate(DateTime.now())}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildQuickStatCard(
+            title: 'Total Logs',
+            value: '65',
+            icon: Icons.forest,
+            color: Colors.green,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildQuickStatCard(
+            title: 'Active Orders',
+            value: '12',
+            icon: Icons.shopping_cart,
+            color: Colors.orange,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildQuickStatCard(
+            title: 'Customers',
+            value: '28',
+            icon: Icons.people,
+            color: Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: color,
+              size: 28,
+            ),
+            const SizedBox(height: 12),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               title,
-              textAlign: TextAlign.center,
               style: TextStyle(
+                fontSize: 14,
                 color: Colors.grey[600],
               ),
             ),
@@ -297,41 +405,186 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityItem(String title, String time, IconData icon) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Icon(icon, color: Colors.brown),
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.textPrimaryColor,
+        ),
       ),
-      title: Text(title),
-      subtitle: Text(time),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () {
-        // TODO: Show activity details
+    );
+  }
+
+  Widget _buildSummaryCards(Map<String, int> data, Color baseColor) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: data.length,
+      itemBuilder: (context, index) {
+        final entry = data.entries.elementAt(index);
+        final opacity = 1.0 - (index * 0.2).clamp(0.0, 0.6);
+        
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            onTap: () {
+              // Navigate to detailed view
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Viewing details for ${entry.key}'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: baseColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    entry.value.toString(),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: baseColor.withOpacity(opacity),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    entry.key,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
       },
     );
   }
 
-  Widget _buildQuickAction(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Icon(icon, color: Colors.white, size: 30),
-          ),
-          const SizedBox(height: 8),
-          Text(label),
-        ],
+  Widget _buildRecentOrders() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _recentOrders.length,
+        separatorBuilder: (context, index) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final order = _recentOrders[index];
+          
+          // Determine status color
+          Color statusColor;
+          switch (order['status']) {
+            case 'Delivered':
+              statusColor = Colors.green;
+              break;
+            case 'Processing':
+              statusColor = Colors.blue;
+              break;
+            case 'Pending':
+              statusColor = Colors.orange;
+              break;
+            default:
+              statusColor = Colors.grey;
+          }
+          
+          return ListTile(
+            onTap: () {
+              // Navigate to order details
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Viewing order ${order['id']}'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            title: Text(
+              order['customer'],
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              '${order['id']} • ${order['date']}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '\$${order['amount'].toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    order['status'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }
 

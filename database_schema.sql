@@ -1,6 +1,5 @@
-CREATE DATABASE wood_management;
-
-USE wood_management;
+-- Use the specific database
+USE furatahm_timber;
 
 -- Logs Table
 CREATE TABLE logs (
@@ -24,7 +23,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'manager', 'worker') NOT NULL DEFAULT 'worker',
+    role ENUM('admin', 'manager', 'worker', 'director') NOT NULL DEFAULT 'worker',
     full_name VARCHAR(100),
     phone_number VARCHAR(20),
     profile_image VARCHAR(255),
@@ -115,4 +114,18 @@ CREATE TABLE order_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES inventory(id) ON DELETE CASCADE
+);
+
+-- Notifications Table
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    user_id INT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT 0,
+    action_link VARCHAR(255) NULL,
+    additional_data JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ); 
