@@ -47,7 +47,7 @@ if ($stmt->rowCount() > 0) {
         
         // Return user data with token
         $user_data = [
-            'id' => $user['id'],
+            'id' => (int)$user['id'],
             'username' => $user['username'],
             'email' => $user['email'],
             'role' => $user['role'],

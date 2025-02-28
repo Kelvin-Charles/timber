@@ -63,14 +63,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       });
 
       try {
-        final user = await _apiService.login(
-          _usernameController.text,
-          _passwordController.text,
-        );
-        
-        // Navigate to home screen
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/home', arguments: user);
+        final success = await _apiService.simpleLogin(_usernameController.text, _passwordController.text);
+        if (success) {
+          // Navigate to dashboard using named route
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          // Show error
+          setState(() {
+            _errorMessage = 'Login failed. Please check your credentials.';
+          });
+        }
       } catch (e) {
         setState(() {
           _errorMessage = e.toString();
@@ -116,10 +119,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         key: _formKey,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Logo and title
+                            // Logo or App Name
                             const Icon(
                               Icons.forest,
                               size: 80,
@@ -128,75 +129,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             const SizedBox(height: 16),
                             const Text(
                               'NgaraTimber',
-                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 28,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.primaryColor,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Log in to your account',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppTheme.textSecondaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
                             
-                            // Error message
-                            if (_errorMessage.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.errorColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppTheme.errorColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      color: AppTheme.errorColor,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _errorMessage,
-                                        style: const TextStyle(
-                                          color: AppTheme.errorColor,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: AppTheme.errorColor,
-                                        size: 18,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _errorMessage = '';
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            
-                            // Username field
+                            // Username Field
                             TextFormField(
                               controller: _usernameController,
                               decoration: const InputDecoration(
                                 labelText: 'Username',
                                 prefixIcon: Icon(Icons.person),
-                                hintText: 'Enter your username',
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -207,13 +153,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                             const SizedBox(height: 16),
                             
-                            // Password field
+                            // Password Field
                             TextFormField(
                               controller: _passwordController,
+                              obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock),
-                                hintText: 'Enter your password',
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -225,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   },
                                 ),
                               ),
-                              obscureText: _obscurePassword,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -233,77 +178,44 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 8),
-                            
-                            // Forgot password link
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  // TODO: Implement forgot password
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Forgot password feature coming soon!'),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Forgot Password?'),
-                              ),
-                            ),
                             const SizedBox(height: 24),
                             
-                            // Login button
-                            ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
+                            // Error Message
+                            if (_errorMessage.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Text(
+                                  _errorMessage,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'LOGIN',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                            ),
                             
-                            const SizedBox(height: 24),
-                            
-                            // Register link
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  "Don't have an account?",
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondaryColor,
+                            // Login Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _login,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    // Navigate to register screen
-                                    Navigator.pushNamed(context, '/register');
-                                  },
-                                  child: const Text(
-                                    'Register',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text('Login'),
+                              ),
                             ),
                           ],
                         ),

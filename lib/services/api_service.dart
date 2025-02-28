@@ -31,6 +31,7 @@ class ApiService {
   // User Authentication
   Future<User> login(String username, String password) async {
     try {
+      print('Attempting login for user: $username');
       final response = await http.post(
         Uri.parse('$baseUrl/login.php'),
         headers: {'Content-Type': 'application/json'},
@@ -39,6 +40,9 @@ class ApiService {
           'password': password,
         }),
       );
+      
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body}');
       
       if (response.statusCode == 200) {
         final userData = json.decode(response.body);
@@ -49,11 +53,20 @@ class ApiService {
           await prefs.setString('auth_token', userData['token']);
         }
         
+        // Check if all required fields are present
+        if (userData['username'] == null || userData['email'] == null || userData['role'] == null) {
+          throw Exception('Invalid user data received from server');
+        }
+        
         return User.fromJson(userData);
       } else {
-        throw Exception('Login failed: ${response.statusCode}');
+        throw Exception('Login failed: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
+      print('Login error: $e');
+      if (e.toString().contains("type 'String' is not a subtype of type 'int?'")) {
+        print('Type conversion error detected. Check the User.fromJson method.');
+      }
       throw Exception('Failed to connect to server: $e');
     }
   }
@@ -523,6 +536,25 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Failed to connect to server: $e');
+    }
+  }
+  
+  Future<bool> simpleLogin(String username, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'password': password,
+        }),
+      );
+      
+      print('Login response: ${response.statusCode}, ${response.body}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Simple login error: $e');
+      return false;
     }
   }
 } 

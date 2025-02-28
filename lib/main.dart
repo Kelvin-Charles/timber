@@ -4,6 +4,7 @@ import '../models/log.dart';
 import '../services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/logs_screen.dart';
 import 'models/user.dart';
 import 'dart:io';
 import 'widgets/notification_bell.dart';
@@ -11,6 +12,14 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Enable debug mode
+  const bool debugMode = true;
+  
+  if (debugMode) {
+    print('Running in debug mode');
+    // Print additional diagnostic information
+  }
   
   // Initialize notification service
   final notificationService = NotificationService();
@@ -31,19 +40,65 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-class NgaraTimberApp extends StatelessWidget {
+class NgaraTimberApp extends StatefulWidget {
   const NgaraTimberApp({super.key});
+
+  @override
+  State<NgaraTimberApp> createState() => _NgaraTimberAppState();
+}
+
+class _NgaraTimberAppState extends State<NgaraTimberApp> {
+  bool _isLoggedIn = false;
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Check if user is logged in
+    // For now, we'll just set it to false
+    setState(() {
+      _isLoggedIn = false;
+      _user = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NgaraTimber',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.getTheme(),
       initialRoute: '/login',
       routes: {
+        '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/dashboard': (context) => const DashboardScreen(user: null),
+        // Add other routes as needed
+      },
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes here if needed
+        if (settings.name == '/dashboard') {
+          // You can pass parameters here if needed
+          return MaterialPageRoute(
+            builder: (context) => const DashboardScreen(user: null),
+          );
+        }
+        return null;
+      },
+      onUnknownRoute: (settings) {
+        // Handle unknown routes
+        return MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: Text('Route ${settings.name} not found'),
+            ),
+          ),
+        );
       },
     );
   }
@@ -58,17 +113,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  late User _currentUser;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Get user from route arguments
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is User) {
-      _currentUser = args;
-    }
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -81,29 +125,32 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('NgaraTimber'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        actions: const [
-          NotificationBell(),
-          SizedBox(width: 8),
+        actions: [
+          const NotificationBell(),
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              // Navigate to profile screen
+            },
+          ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          DashboardScreen(user: _currentUser),
-          const LogTrackingScreen(),
-          const InventoryScreen(),
-          const ProductionScreen(),
-          const CustomersScreen(),
-        ],
+      body: SafeArea(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            const DashboardScreen(user: null),
+            const LogsScreen(),
+            const InventoryScreen(),
+            const ProductionScreen(),
+            const CustomersScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
@@ -189,48 +236,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Implement refresh logic here
-          await Future.delayed(const Duration(seconds: 1));
-          setState(() {
-            // Update data if needed
-          });
-        },
+      body: SafeArea(
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome card
-              _buildWelcomeCard(),
-              const SizedBox(height: 24),
-              
-              // Quick stats
-              _buildQuickStats(),
-              const SizedBox(height: 24),
-              
-              // Inventory summary
-              _buildSectionTitle('Inventory Summary'),
-              _buildSummaryCards(_inventorySummary, Colors.blue),
-              const SizedBox(height: 24),
-              
-              // Logs summary
-              _buildSectionTitle('Logs Summary'),
-              _buildSummaryCards(_logsSummary, AppTheme.primaryColor),
-              const SizedBox(height: 24),
-              
-              // Production summary
-              _buildSectionTitle('Production Summary'),
-              _buildSummaryCards(_productionSummary.map((key, value) => 
-                MapEntry(key, value.toInt())), AppTheme.secondaryColor),
-              const SizedBox(height: 24),
-              
-              // Recent orders
-              _buildSectionTitle('Recent Orders'),
-              _buildRecentOrders(),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome card
+                _buildWelcomeCard(),
+                const SizedBox(height: 24),
+                
+                // Quick stats
+                _buildQuickStats(),
+                const SizedBox(height: 24),
+                
+                // Inventory summary
+                _buildSectionTitle('Inventory Summary'),
+                _buildSummaryCards(_inventorySummary, Colors.blue),
+                const SizedBox(height: 24),
+                
+                // Logs summary
+                _buildSectionTitle('Logs Summary'),
+                _buildSummaryCards(_logsSummary, AppTheme.primaryColor),
+                const SizedBox(height: 24),
+                
+                // Production summary
+                _buildSectionTitle('Production Summary'),
+                _buildSummaryCards(_productionSummary.map((key, value) => 
+                  MapEntry(key, value.toInt())), AppTheme.secondaryColor),
+                const SizedBox(height: 24),
+                
+                // Recent orders
+                _buildSectionTitle('Recent Orders'),
+                _buildRecentOrders(),
+              ],
+            ),
           ),
         ),
       ),
@@ -631,82 +672,84 @@ class _LogTrackingScreenState extends State<LogTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadLogs,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage.isNotEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Error: $_errorMessage',
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadLogs,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _logs.isEmpty
-                    ? const Center(child: Text('No logs found'))
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16.0),
-                        itemCount: _logs.length,
-                        itemBuilder: (context, index) {
-                          final log = _logs[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 16.0),
-                            child: ListTile(
-                              title: Text(
-                                'Log #${log.logNumber} - ${log.species}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadLogs,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage.isNotEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Error: $_errorMessage',
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadLogs,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _logs.isEmpty
+                      ? const Center(child: Text('No logs found'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16.0),
+                          itemCount: _logs.length,
+                          itemBuilder: (context, index) {
+                            final log = _logs[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 16.0),
+                              child: ListTile(
+                                title: Text(
+                                  'Log #${log.logNumber} - ${log.species}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Size: ${log.diameter}cm × ${log.length}m'),
+                                    Text('Status: ${log.status}'),
+                                    Text('Received: ${log.receivedDate}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () {
+                                        _showLogForm(context, log);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        _confirmDelete(context, log);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  _showLogDetails(context, log);
+                                },
                               ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Size: ${log.diameter}cm × ${log.length}m'),
-                                  Text('Status: ${log.status}'),
-                                  Text('Received: ${log.receivedDate}'),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () {
-                                      _showLogForm(context, log);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      _confirmDelete(context, log);
-                                    },
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                _showLogDetails(context, log);
-                              },
-                            ),
-                          );
-                        },
+                            );
+                          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showLogForm(context);
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        _showLogForm(context);
+      },
+      child: const Icon(Icons.add),
+    ),
+  );
   }
 
   void _showLogDetails(BuildContext context, Log log) {
@@ -1102,7 +1145,7 @@ class ProductionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text('Production Workflow Screen - Coming Soon'),
+      child: Text('Production Management Screen - Coming Soon'),
     );
   }
 }
