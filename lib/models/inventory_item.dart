@@ -4,8 +4,10 @@ class InventoryItem {
   final String category;
   final int quantity;
   final String unit;
-  final double? price;
   final String status;
+  final double? price;
+  final String? location;
+  final String? notes;
   
   InventoryItem({
     required this.id,
@@ -13,8 +15,10 @@ class InventoryItem {
     required this.category,
     required this.quantity,
     required this.unit,
-    this.price,
     required this.status,
+    this.price,
+    this.location,
+    this.notes,
   });
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
@@ -24,8 +28,10 @@ class InventoryItem {
       category: json['category'],
       quantity: json['quantity'],
       unit: json['unit'],
-      price: json['price'] != null ? double.parse(json['price'].toString()) : null,
       status: json['status'],
+      price: json['price']?.toDouble(),
+      location: json['location'],
+      notes: json['notes'],
     );
   }
 
@@ -36,8 +42,10 @@ class InventoryItem {
       'category': category,
       'quantity': quantity,
       'unit': unit,
-      'price': price,
       'status': status,
+      'price': price,
+      'location': location,
+      'notes': notes,
     };
   }
 } 

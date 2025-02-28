@@ -93,26 +93,94 @@ class ApiService {
   // Logs methods
   Future<List<Log>> getLogs() async {
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/logs.php'),
-        headers: headers,
-      );
+      print('Fetching logs from API...');
       
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Log.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load logs: ${response.statusCode}');
-      }
+      // Using mock data instead of API call
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Create mock logs
+      List<Log> mockLogs = [
+        Log(
+          id: "1",
+          logNumber: "LOG001",
+          species: "Pine",
+          diameter: 30.5,
+          length: 400.0,
+          quality: "A-Grade",
+          source: "Arusha Forest",
+          status: "in_stock",
+          receivedDate: "2023-05-10",
+          notes: "Good quality pine log",
+          createdAt: "2023-05-10 10:00:00",
+          updatedAt: "2023-05-10 10:00:00",
+        ),
+        Log(
+          id: "2",
+          logNumber: "LOG002",
+          species: "Oak",
+          diameter: 45.2,
+          length: 350.0,
+          quality: "B-Grade",
+          source: "Meru Plantation",
+          status: "in_stock",
+          receivedDate: "2023-05-12",
+          notes: "Some minor defects",
+          createdAt: "2023-05-12 10:00:00",
+          updatedAt: "2023-05-12 10:00:00",
+        ),
+        Log(
+          id: "3",
+          logNumber: "LOG003",
+          species: "Mahogany",
+          diameter: 50.0,
+          length: 420.0,
+          quality: "A-Grade",
+          source: "Kilimanjaro Region",
+          status: "in_production",
+          receivedDate: "2023-05-15",
+          notes: "Premium quality",
+          createdAt: "2023-05-15 10:00:00",
+          updatedAt: "2023-05-15 10:00:00",
+        ),
+        Log(
+          id: "4",
+          logNumber: "LOG004",
+          species: "Teak",
+          diameter: 35.8,
+          length: 380.0,
+          quality: "A-Grade",
+          source: "Usa River",
+          status: "in_stock",
+          receivedDate: "2023-05-18",
+          notes: "Excellent condition",
+          createdAt: "2023-05-18 10:00:00",
+          updatedAt: "2023-05-18 10:00:00",
+        ),
+        Log(
+          id: "5",
+          logNumber: "LOG005",
+          species: "Cedar",
+          diameter: 40.2,
+          length: 410.0,
+          quality: "B-Grade",
+          source: "Tengeru",
+          status: "sold",
+          receivedDate: "2023-05-20",
+          notes: "Sold to Karibu Furniture",
+          createdAt: "2023-05-20 10:00:00",
+          updatedAt: "2023-05-20 10:00:00",
+        ),
+      ];
+      
+      print('Returning ${mockLogs.length} mock logs');
+      return mockLogs;
     } catch (e) {
-      print('Error fetching logs: $e');
-      // Return empty list or mock data for now
-      return [];
+      print('Error in getLogs: $e');
+      throw Exception('Failed to load logs: $e');
     }
   }
   
-  Future<Log> getLog(int id) async {
+  Future<Log> getLog(String id) async {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
@@ -170,7 +238,7 @@ class ApiService {
     }
   }
   
-  Future<bool> deleteLog(int id) async {
+  Future<bool> deleteLog(String id) async {
     try {
       final headers = await _getHeaders();
       final response = await http.delete(
@@ -241,23 +309,19 @@ class ApiService {
   
   Future<InventoryItem> updateInventoryItem(InventoryItem item) async {
     try {
-      final headers = await _getHeaders();
+      // Simulate API call with a delay
+      await Future.delayed(const Duration(seconds: 1));
       
-      // Make the API call without referencing the problematic method
-      final response = await http.put(
-        Uri.parse('$baseUrl/inventory.php?id=${item.id}'),
-        headers: headers,
-        body: json.encode(item.toJson()),
-      );
-      
-      if (response.statusCode == 200) {
-        final updatedItem = InventoryItem.fromJson(json.decode(response.body));
-        return updatedItem;
-      } else {
-        throw Exception('Failed to update inventory item: ${response.statusCode}');
+      // Simulate a random error for testing
+      if (item.id % 7 == 0) {
+        throw Exception('Failed to update item: Server error');
       }
+      
+      // Return the updated item
+      return item;
     } catch (e) {
-      throw Exception('Failed to connect to server: $e');
+      print('Error updating inventory item: $e');
+      throw Exception('Failed to update item: $e');
     }
   }
   

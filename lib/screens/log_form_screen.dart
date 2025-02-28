@@ -71,15 +71,16 @@ class _LogFormScreenState extends State<LogFormScreen> {
       try {
         // Create a Log object from form data
         final log = Log(
+          id: widget.log?.id ?? "",
           logNumber: _logNumberController.text,
           species: _speciesController.text,
           diameter: double.parse(_diameterController.text),
           length: double.parse(_lengthController.text),
           quality: _qualityController.text,
           source: _sourceController.text,
-          receivedDate: _receivedDateController.text,
           status: _statusController.text,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
+          receivedDate: _receivedDateController.text,
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         );
         
         // Save the log using the API service
