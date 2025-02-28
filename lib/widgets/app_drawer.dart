@@ -121,7 +121,8 @@ class AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.shopping_cart),
               title: const Text('Orders'),
               onTap: () {
-                Navigator.pushNamed(context, '/orders');
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/orders', arguments: user);
               },
             ),
           

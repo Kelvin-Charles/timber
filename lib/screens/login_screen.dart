@@ -64,21 +64,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       });
 
       try {
-        final user = await _apiService.login(_usernameController.text, _passwordController.text);
-        
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DashboardScreen(user: user),
-          ),
+        final user = await _apiService.authenticateUser(
+          _usernameController.text,
+          _passwordController.text,
         );
+        
+        if (user != null) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              '/dashboard',
+              arguments: user,
+            );
+          }
+        } else {
+          setState(() {
+            _errorMessage = 'Invalid username or password';
+            _isLoading = false;
+          });
+        }
       } catch (e) {
         setState(() {
-          _errorMessage = e.toString();
-        });
-      } finally {
-        setState(() {
+          _errorMessage = 'Login failed: ${e.toString()}';
           _isLoading = false;
         });
       }

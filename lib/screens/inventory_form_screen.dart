@@ -178,7 +178,7 @@ class _InventoryFormScreenState extends State<InventoryFormScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Price (Optional)',
                   hintText: 'Enter price per unit',
-                  prefixText: '\$ ',
+                  prefixText: 'TSh ',
                 ),
                 keyboardType: TextInputType.number,
               ),

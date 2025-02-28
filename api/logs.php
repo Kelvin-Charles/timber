@@ -97,7 +97,7 @@ switch($method) {
                 echo json_encode($log);
             } else {
                 http_response_code(500);
-                echo json_encode(["message" => "Unable to create log"]);
+                echo json_encode(["message" => "Unable to add log"]);
             }
         } else {
             http_response_code(400);

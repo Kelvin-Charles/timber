@@ -42,139 +42,88 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: const Text('Notifications'),
         actions: [
           if (_notifications.isNotEmpty)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'mark_all_read') {
-                  _notificationService.markAllAsRead();
-                } else if (value == 'clear_all') {
-                  _showClearConfirmationDialog();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'mark_all_read',
-                  child: Text('Mark all as read'),
-                ),
-                const PopupMenuItem(
-                  value: 'clear_all',
-                  child: Text('Clear all'),
-                ),
-              ],
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              tooltip: 'Clear all',
+              onPressed: _showClearConfirmationDialog,
             ),
         ],
       ),
       body: _notifications.isEmpty
-          ? _buildEmptyState()
-          : _buildNotificationsList(),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_off,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You\'ll be notified about stock updates and other important events',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationsList() {
-    return ListView.separated(
-      itemCount: _notifications.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final notification = _notifications[index];
-        return Dismissible(
-          key: Key('notification_${notification.id}'),
-          background: Container(
-            color: Colors.red,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            child: const Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
-          ),
-          direction: DismissDirection.endToStart,
-          onDismissed: (direction) {
-            _notificationService.deleteNotification(notification.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Notification deleted'),
-                duration: Duration(seconds: 2),
+          ? const Center(
+              child: Text(
+                'No notifications',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-            );
-          },
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: notification.color.withOpacity(0.2),
-              child: Icon(
-                notification.icon,
-                color: notification.color,
-              ),
-            ),
-            title: Text(
-              notification.title,
-              style: TextStyle(
-                fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(notification.message),
-                const SizedBox(height: 4),
-                Text(
-                  _formatTimestamp(notification.timestamp),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+            )
+          : ListView.builder(
+              itemCount: _notifications.length,
+              itemBuilder: (context, index) {
+                final notification = _notifications[index];
+                return Dismissible(
+                  key: Key('notification_${notification.id}'),
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ],
+                  direction: DismissDirection.endToStart,
+                  onDismissed: (direction) {
+                    setState(() {
+                      _notificationService.deleteNotification(notification.id);
+                    });
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: notification.getColor().withOpacity(0.2),
+                        child: Icon(
+                          notification.getIcon(),
+                          color: notification.getColor(),
+                        ),
+                      ),
+                      title: Text(
+                        notification.title,
+                        style: TextStyle(
+                          fontWeight: notification.isRead
+                              ? FontWeight.normal
+                              : FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(notification.message),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatTimestamp(notification.timestamp),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                      onTap: () {
+                        if (!notification.isRead) {
+                          _notificationService.markAsRead(notification.id);
+                        }
+                        // Handle notification action if needed
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            tileColor: notification.isRead ? null : AppTheme.primaryColor.withOpacity(0.05),
-            onTap: () {
-              if (!notification.isRead) {
-                _notificationService.markAsRead(notification.id);
-              }
-              
-              // Handle notification action if needed
-              if (notification.actionLink != null) {
-                // Navigate to the relevant screen
-              }
-            },
-          ),
-        );
-      },
     );
   }
 

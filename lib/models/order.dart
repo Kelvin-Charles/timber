@@ -22,18 +22,49 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    List<OrderItem> parseItems() {
+      try {
+        if (json['items'] == null) {
+          return [];
+        }
+        
+        if (json['items'] is! List) {
+          return [];
+        }
+        
+        final itemsList = json['items'] as List;
+        return itemsList.map((item) {
+          try {
+            return OrderItem.fromJson(item);
+          } catch (e) {
+            print('Error parsing order item: $e');
+            return OrderItem(
+              productId: 0,
+              quantity: 0,
+              unitPrice: 0.0,
+            );
+          }
+        }).toList();
+      } catch (e) {
+        print('Error parsing items list: $e');
+        return [];
+      }
+    }
+
     return Order(
-      id: json['id'],
-      customerId: json['customer_id'],
-      orderDate: json['order_date'],
-      status: json['status'],
-      totalAmount: double.parse(json['total_amount'].toString()),
+      id: json['id']?.toString() ?? '0',
+      customerId: json['customer_id'] is String 
+          ? int.tryParse(json['customer_id']) ?? 0
+          : json['customer_id'] ?? 0,
+      orderDate: json['order_date'] ?? DateTime.now().toString().substring(0, 10),
       deliveryDate: json['delivery_date'],
+      status: json['status'] ?? 'unknown',
+      totalAmount: json['total_amount'] is String 
+          ? double.tryParse(json['total_amount']) ?? 0.0
+          : (json['total_amount'] ?? 0.0).toDouble(),
       paymentStatus: json['payment_status'],
       notes: json['notes'],
-      items: json['items'] != null
-          ? List<OrderItem>.from(json['items'].map((x) => OrderItem.fromJson(x)))
-          : [],
+      items: parseItems(),
     );
   }
 
@@ -42,9 +73,9 @@ class Order {
       'id': id,
       'customer_id': customerId,
       'order_date': orderDate,
+      'delivery_date': deliveryDate,
       'status': status,
       'total_amount': totalAmount,
-      'delivery_date': deliveryDate,
       'payment_status': paymentStatus,
       'notes': notes,
       'items': items.map((item) => item.toJson()).toList(),
@@ -65,9 +96,15 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      productId: json['product_id'],
-      quantity: json['quantity'],
-      unitPrice: double.parse(json['unit_price'].toString()),
+      productId: json['product_id'] is String 
+          ? int.parse(json['product_id']) 
+          : json['product_id'],
+      quantity: json['quantity'] is String 
+          ? int.parse(json['quantity']) 
+          : json['quantity'],
+      unitPrice: json['unit_price'] is String 
+          ? double.parse(json['unit_price']) 
+          : json['unit_price'].toDouble(),
     );
   }
 

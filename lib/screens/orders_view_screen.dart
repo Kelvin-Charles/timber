@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/order.dart';
+import '../services/api_service.dart';
 import '../widgets/app_drawer.dart';
+import '../utils/role_permissions.dart';
 import '../widgets/role_based_action_button.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -14,47 +16,37 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  bool _isLoading = false;
+  final ApiService _apiService = ApiService();
   List<Order> _orders = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Use mock data instead of API call
-    _loadMockOrders();
+    _loadOrders();
   }
 
-  void _loadMockOrders() {
+  Future<void> _loadOrders() async {
     setState(() {
       _isLoading = true;
     });
-    
-    // Create mock orders
-    _orders = List.generate(10, (index) => Order(
-      id: 'ORD-${1000 + index}',
-      customerId: index % 5 + 1,
-      orderDate: DateTime.now().subtract(Duration(days: index * 3)).toString().substring(0, 10),
-      deliveryDate: index % 3 == 0 ? null : DateTime.now().add(Duration(days: 7 + index)).toString().substring(0, 10),
-      status: index % 5 == 0 ? 'Pending' : (index % 5 == 1 ? 'Processing' : (index % 5 == 2 ? 'Shipped' : (index % 5 == 3 ? 'Delivered' : 'Cancelled'))),
-      totalAmount: 500.0 + (index * 250),
-      paymentStatus: index % 3 == 0 ? 'Pending' : (index % 3 == 1 ? 'Partial' : 'Paid'),
-      items: List.generate(index % 3 + 1, (i) => OrderItem(
-        productId: i + 1,
-        quantity: i + 1,
-        unitPrice: 100.0 + (i * 50),
-      )),
-    ));
-    
-    setState(() {
-      _isLoading = false;
-    });
+
+    try {
+      final orders = await _apiService.getOrders();
+      setState(() {
+        _orders = orders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // Handle error
+    }
   }
 
   void _addOrder() {
-    // Mock implementation
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add order functionality will be implemented soon')),
-    );
+    Navigator.pushNamed(context, '/orders/add', arguments: widget.user);
   }
 
   Color _getStatusColor(String status) {
@@ -165,51 +157,54 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ),
       drawer: AppDrawer(user: widget.user),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _orders.isEmpty
-                ? const Center(child: Text('No orders found'))
-                : ListView.builder(
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(order.status).withOpacity(0.2),
-                            child: Icon(
-                              Icons.shopping_cart,
-                              color: _getStatusColor(order.status),
-                            ),
-                          ),
-                          title: Text('Order #${order.id}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Date: ${order.orderDate}'),
-                              Row(
-                                children: [
-                                  _buildStatusChip(order.status),
-                                  const SizedBox(width: 8),
-                                  if (order.paymentStatus != null)
-                                    _buildPaymentStatusChip(order.paymentStatus!),
-                                ],
+        child: RefreshIndicator(
+          onRefresh: _loadOrders,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _orders.isEmpty
+                  ? const Center(child: Text('No orders found'))
+                  : ListView.builder(
+                      itemCount: _orders.length,
+                      itemBuilder: (context, index) {
+                        final order = _orders[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: _getStatusColor(order.status).withOpacity(0.2),
+                              child: Icon(
+                                Icons.shopping_cart,
+                                color: _getStatusColor(order.status),
                               ),
-                            ],
-                          ),
-                          trailing: Text(
-                            'TSh ${order.totalAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
                             ),
+                            title: Text('Order #${order.id}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Date: ${order.orderDate}'),
+                                Row(
+                                  children: [
+                                    _buildStatusChip(order.status),
+                                    const SizedBox(width: 8),
+                                    if (order.paymentStatus != null)
+                                      _buildPaymentStatusChip(order.paymentStatus!),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            trailing: Text(
+                              'TSh ${order.totalAmount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            onTap: () => _viewOrderDetails(order),
                           ),
-                          onTap: () => _viewOrderDetails(order),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+        ),
       ),
       floatingActionButton: RoleBasedActionButton(
         userRole: widget.user?.role ?? 'worker',

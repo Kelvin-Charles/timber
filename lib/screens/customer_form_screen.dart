@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/customer.dart';
 import '../theme/app_theme.dart';
+import '../services/api_service.dart';
 
 class CustomerFormScreen extends StatefulWidget {
   final User? user;
@@ -21,6 +22,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  
+  bool _isLoading = false;
   
   @override
   void initState() {
@@ -44,18 +47,69 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     super.dispose();
   }
   
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Customer saved successfully'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      
-      // Navigate back
-      Navigator.pop(context);
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final apiService = ApiService();
+        
+        if (widget.customer == null) {
+          // Adding a new customer
+          final newCustomer = Customer(
+            id: 0, // ID will be assigned by the server
+            name: _nameController.text,
+            email: _emailController.text,
+            phone: _phoneController.text,
+            address: _addressController.text,
+            totalOrders: 0,
+            totalSpent: 0,
+          );
+          
+          await apiService.addCustomer(newCustomer);
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Customer added successfully')),
+            );
+            Navigator.pop(context, true); // Return true to indicate success
+          }
+        } else {
+          // Updating an existing customer
+          final updatedCustomer = Customer(
+            id: widget.customer!.id,
+            name: _nameController.text,
+            email: _emailController.text,
+            phone: _phoneController.text,
+            address: _addressController.text,
+            totalOrders: widget.customer!.totalOrders,
+            totalSpent: widget.customer!.totalSpent,
+          );
+          
+          await apiService.updateCustomer(updatedCustomer);
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Customer updated successfully')),
+            );
+            Navigator.pop(context, true); // Return true to indicate success
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
   
@@ -135,13 +189,15 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                child: Text(widget.customer == null ? 'ADD CUSTOMER' : 'UPDATE CUSTOMER'),
+                child: _isLoading 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(widget.customer == null ? 'ADD CUSTOMER' : 'UPDATE CUSTOMER'),
               ),
             ],
           ),

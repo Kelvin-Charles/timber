@@ -4,23 +4,22 @@ import '../models/order.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/role_based_action_button.dart';
 
-class OrdersScreen extends StatefulWidget {
+class OrdersListScreen extends StatefulWidget {
   final User? user;
   
-  const OrdersScreen({super.key, this.user});
+  const OrdersListScreen({super.key, this.user});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  State<OrdersListScreen> createState() => _OrdersListScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _OrdersListScreenState extends State<OrdersListScreen> {
   bool _isLoading = false;
   List<Order> _orders = [];
 
   @override
   void initState() {
     super.initState();
-    // Use mock data instead of API call
     _loadMockOrders();
   }
 
@@ -38,6 +37,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       status: index % 5 == 0 ? 'Pending' : (index % 5 == 1 ? 'Processing' : (index % 5 == 2 ? 'Shipped' : (index % 5 == 3 ? 'Delivered' : 'Cancelled'))),
       totalAmount: 500.0 + (index * 250),
       paymentStatus: index % 3 == 0 ? 'Pending' : (index % 3 == 1 ? 'Partial' : 'Paid'),
+      notes: 'Order notes ${index + 1}',
       items: List.generate(index % 3 + 1, (i) => OrderItem(
         productId: i + 1,
         quantity: i + 1,
@@ -51,7 +51,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _addOrder() {
-    // Mock implementation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Add order functionality will be implemented soon')),
     );
@@ -124,7 +123,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _viewOrderDetails(Order order) {
-    // Simple order details view
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

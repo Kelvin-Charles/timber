@@ -73,7 +73,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             title: Text(item.name),
                             subtitle: Text('${item.quantity} ${item.unit} - ${item.status}'),
                             trailing: Text(
-                              item.price != null ? '\$${item.price!.toStringAsFixed(2)}' : 'N/A',
+                              item.price != null ? 'TSh ${item.price!.toStringAsFixed(2)}' : 'N/A',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,

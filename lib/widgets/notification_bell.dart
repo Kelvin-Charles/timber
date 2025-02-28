@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
+import '../models/notification.dart';
+import '../screens/notifications_screen.dart';
 
 class NotificationBell extends StatefulWidget {
   const NotificationBell({super.key});
@@ -8,7 +11,35 @@ class NotificationBell extends StatefulWidget {
 }
 
 class _NotificationBellState extends State<NotificationBell> {
-  int _unreadCount = 3; // Placeholder value
+  final NotificationService _notificationService = NotificationService();
+  int _unreadCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+    
+    // Listen for notification changes
+    _notificationService.notificationsStream.listen((notifications) {
+      if (mounted) {
+        setState(() {
+          _unreadCount = notifications.where((n) => !n.isRead).length;
+        });
+      }
+    });
+  }
+
+  Future<void> _loadNotifications() async {
+    await _notificationService.init();
+    if (mounted) {
+      setState(() {
+        _unreadCount = _notificationService.notifications
+            .where((n) => !n.isRead)
+            .length;
+      });
+      print('Unread notifications: $_unreadCount');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +49,11 @@ class _NotificationBellState extends State<NotificationBell> {
         IconButton(
           icon: const Icon(Icons.notifications),
           onPressed: () {
-            // Show notifications
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Notifications feature coming soon'),
-                duration: Duration(seconds: 2),
+            // Navigate to notifications screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
               ),
             );
           },

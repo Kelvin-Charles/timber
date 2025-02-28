@@ -62,6 +62,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    
+    // Initialize notification service
+    final notificationService = NotificationService();
+    notificationService.init().then((_) {
+      // Create sample notifications if there are none
+      if (notificationService.notifications.isEmpty) {
+        notificationService.createSampleNotifications();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Get the user's role
     final String userRole = widget.user?.role ?? 'worker';

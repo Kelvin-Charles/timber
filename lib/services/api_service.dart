@@ -92,22 +92,24 @@ class ApiService {
   
   // Logs methods
   Future<List<Log>> getLogs() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Return mock logs
-    return List.generate(10, (index) => Log(
-      id: index + 1,
-      logNumber: 'LOG${1000 + index}',
-      species: index % 2 == 0 ? 'Pine' : 'Cedar',
-      diameter: 30 + (index * 2),
-      length: 4 + (index % 3),
-      quality: index % 3 == 0 ? 'A' : (index % 3 == 1 ? 'B' : 'C'),
-      source: 'Supplier ${index % 5 + 1}',
-      receivedDate: DateTime.now().subtract(Duration(days: index * 3)).toString().substring(0, 10),
-      status: index % 4 == 0 ? 'Available' : (index % 4 == 1 ? 'In Production' : (index % 4 == 2 ? 'Sold' : 'Damaged')),
-      notes: index % 3 == 0 ? 'Good quality log' : null,
-    ));
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/logs.php'),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Log.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load logs: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching logs: $e');
+      // Return empty list or mock data for now
+      return [];
+    }
   }
   
   Future<Log> getLog(int id) async {
@@ -143,6 +145,7 @@ class ApiService {
         throw Exception('Failed to add log: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error adding log: $e');
       throw Exception('Failed to connect to server: $e');
     }
   }
@@ -162,11 +165,12 @@ class ApiService {
         throw Exception('Failed to update log: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error updating log: $e');
       throw Exception('Failed to connect to server: $e');
     }
   }
   
-  Future<void> deleteLog(int id) async {
+  Future<bool> deleteLog(int id) async {
     try {
       final headers = await _getHeaders();
       final response = await http.delete(
@@ -174,11 +178,10 @@ class ApiService {
         headers: headers,
       );
       
-      if (response.statusCode != 200) {
-        throw Exception('Failed to delete log: ${response.statusCode}');
-      }
+      return response.statusCode == 200;
     } catch (e) {
-      throw Exception('Failed to connect to server: $e');
+      print('Error deleting log: $e');
+      return false;
     }
   }
   
@@ -365,19 +368,24 @@ class ApiService {
   
   // Customer methods
   Future<List<Customer>> getCustomers() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Return mock customers
-    return List.generate(12, (index) => Customer(
-      id: index + 1,
-      name: 'Customer ${index + 1}',
-      email: 'customer${index + 1}@example.com',
-      phone: '+254 7${index}${index} ${index}00 ${index}00',
-      address: 'Address ${index + 1}',
-      totalOrders: index + 1,
-      totalSpent: (index + 1) * 1000.0,
-    ));
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/customers.php'),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Customer.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load customers: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching customers: $e');
+      // Return empty list or mock data for now
+      return [];
+    }
   }
   
   Future<Customer> getCustomer(int id) async {
@@ -413,6 +421,7 @@ class ApiService {
         throw Exception('Failed to add customer: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error adding customer: $e');
       throw Exception('Failed to connect to server: $e');
     }
   }
@@ -432,33 +441,87 @@ class ApiService {
         throw Exception('Failed to update customer: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error updating customer: $e');
       throw Exception('Failed to connect to server: $e');
+    }
+  }
+  
+  Future<bool> deleteCustomer(int id) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/customers.php?id=$id'),
+        headers: headers,
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting customer: $e');
+      return false;
     }
   }
   
   // Order methods
   Future<List<Order>> getOrders() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Return mock orders
-    return List.generate(10, (index) => Order(
-      id: 'ORD-${1000 + index}',
-      customerId: index % 5 + 1,
-      orderDate: DateTime.now().subtract(Duration(days: index * 3)).toString().substring(0, 10),
-      deliveryDate: index % 3 == 0 ? null : DateTime.now().add(Duration(days: 7 + index)).toString().substring(0, 10),
-      status: index % 5 == 0 ? 'Pending' : (index % 5 == 1 ? 'Processing' : (index % 5 == 2 ? 'Shipped' : (index % 5 == 3 ? 'Delivered' : 'Cancelled'))),
-      totalAmount: 500.0 + (index * 250),
-      paymentStatus: index % 3 == 0 ? 'Pending' : (index % 3 == 1 ? 'Partial' : 'Paid'),
-      items: List.generate(index % 3 + 1, (i) => OrderItem(
-        productId: i + 1,
-        quantity: i + 1,
-        unitPrice: 100.0 + (i * 50),
-      )),
-    ));
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders.php'),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        // Print the raw response for debugging
+        print('Orders API response: ${response.body}');
+        
+        // Safely decode the JSON
+        final dynamic decodedData = json.decode(response.body);
+        
+        // Check if the response is a list
+        if (decodedData is! List) {
+          print('API did not return a list for orders: $decodedData');
+          return [];
+        }
+        
+        // Convert to List<Order>
+        final List<Order> orders = [];
+        for (var item in decodedData) {
+          try {
+            // Make sure items is a list
+            if (item['items'] == null) {
+              item['items'] = [];
+            } else if (item['items'] is! List) {
+              print('Items is not a list: ${item['items']}');
+              item['items'] = [];
+            }
+            
+            orders.add(Order.fromJson(item));
+          } catch (e) {
+            print('Error parsing order: $e');
+            // Add a default order if parsing fails
+            orders.add(Order(
+              id: item['id']?.toString() ?? '0',
+              customerId: 0,
+              orderDate: item['order_date'] ?? DateTime.now().toString().substring(0, 10),
+              status: item['status'] ?? 'unknown',
+              totalAmount: 0.0,
+              items: [],
+            ));
+          }
+        }
+        
+        return orders;
+      } else {
+        throw Exception('Failed to load orders: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching orders: $e');
+      // Return empty list for now
+      return [];
+    }
   }
   
-  Future<Order> getOrder(int id) async {
+  Future<Order> getOrder(String id) async {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
@@ -491,6 +554,7 @@ class ApiService {
         throw Exception('Failed to add order: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error adding order: $e');
       throw Exception('Failed to connect to server: $e');
     }
   }
@@ -510,7 +574,23 @@ class ApiService {
         throw Exception('Failed to update order: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error updating order: $e');
       throw Exception('Failed to connect to server: $e');
+    }
+  }
+  
+  Future<bool> deleteOrder(String id) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/orders.php?id=$id'),
+        headers: headers,
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error deleting order: $e');
+      return false;
     }
   }
   
@@ -545,5 +625,62 @@ class ApiService {
       role: index == 0 ? 'admin' : (index == 1 ? 'director' : (index < 4 ? 'manager' : 'worker')),
       fullName: 'User ${index + 1}',
     ));
+  }
+  
+  Future<User?> authenticateUser(String username, String password) async {
+    try {
+      // For demo purposes, we'll use hardcoded credentials
+      // In a real app, this would make an API call to your backend
+      
+      // Admin user
+      if (username == 'admin' && password == 'Admin123!') {
+        return User(
+          id: 1,
+          username: 'admin',
+          email: 'admin@ngaratimber.com',
+          role: 'admin',
+          fullName: 'Baraka Mwenda',
+        );
+      }
+      
+      // Director user
+      else if (username == 'director' && password == 'Director123!') {
+        return User(
+          id: 2,
+          username: 'director',
+          email: 'director@ngaratimber.com',
+          role: 'director',
+          fullName: 'Amani Ngara',
+        );
+      }
+      
+      // Manager user
+      else if (username == 'manager' && password == 'Manager123!') {
+        return User(
+          id: 3,
+          username: 'manager',
+          email: 'manager@ngaratimber.com',
+          role: 'manager',
+          fullName: 'Grace Mollel',
+        );
+      }
+      
+      // Worker user
+      else if (username == 'worker' && password == 'Worker123!') {
+        return User(
+          id: 4,
+          username: 'worker',
+          email: 'worker@ngaratimber.com',
+          role: 'worker',
+          fullName: 'Daniel Massawe',
+        );
+      }
+      
+      // Invalid credentials
+      return null;
+    } catch (e) {
+      print('Authentication error: $e');
+      return null;
+    }
   }
 } 

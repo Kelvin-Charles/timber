@@ -59,7 +59,7 @@ class AppNotification {
   }
 
   // Get icon based on notification type
-  IconData get icon {
+  IconData getIcon() {
     switch (type) {
       case NotificationType.stockUpdate:
         return Icons.inventory;
@@ -76,19 +76,19 @@ class AppNotification {
   }
 
   // Get color based on notification type
-  Color get color {
+  Color getColor() {
     switch (type) {
       case NotificationType.stockUpdate:
         return Colors.blue;
       case NotificationType.orderStatus:
         return Colors.green;
       case NotificationType.productionUpdate:
-        return Colors.orange;
+        return Colors.purple;
       case NotificationType.systemAlert:
-        return Colors.red;
+        return Colors.orange;
       case NotificationType.general:
       default:
-        return Colors.purple;
+        return Colors.grey;
     }
   }
 

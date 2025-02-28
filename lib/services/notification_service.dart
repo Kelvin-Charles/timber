@@ -23,7 +23,29 @@ class NotificationService {
   
   // Initialize the service
   Future<void> init() async {
-    await _loadNotifications();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = prefs.getString(_storageKey);
+      
+      if (notificationsJson != null) {
+        final List<dynamic> decoded = json.decode(notificationsJson);
+        _notifications = decoded
+            .map((item) => AppNotification.fromJson(item))
+            .toList();
+      } else {
+        _notifications = [];
+        // Create sample notifications if none exist
+        await createSampleNotifications();
+      }
+      
+      // Notify listeners
+      _notificationsController.add(_notifications);
+      
+      print('Loaded ${_notifications.length} notifications');
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      _notifications = [];
+    }
   }
   
   // Load notifications from storage
@@ -46,9 +68,16 @@ class NotificationService {
   
   // Save notifications to storage
   Future<void> _saveNotifications() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String encoded = json.encode(_notifications.map((n) => n.toJson()).toList());
-    await prefs.setString(_storageKey, encoded);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = json.encode(
+        _notifications.map((n) => n.toJson()).toList(),
+      );
+      await prefs.setString(_storageKey, notificationsJson);
+      print('Saved ${_notifications.length} notifications');
+    } catch (e) {
+      print('Error saving notifications: $e');
+    }
   }
   
   // Add a new notification
@@ -128,6 +157,57 @@ class NotificationService {
     );
     
     await addNotification(notification);
+  }
+  
+  // Create sample notifications
+  Future<void> createSampleNotifications() async {
+    // Clear existing notifications
+    await clearAll();
+    
+    // Add sample notifications
+    await addNotification(
+      AppNotification(
+        id: 1,
+        title: 'New Log Added',
+        message: 'A new log has been added to the inventory.',
+        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+        type: NotificationType.stockUpdate,
+        isRead: false,
+      ),
+    );
+    
+    await addNotification(
+      AppNotification(
+        id: 2,
+        title: 'Order Status Update',
+        message: 'Order #1234 has been marked as delivered.',
+        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+        type: NotificationType.orderStatus,
+        isRead: true,
+      ),
+    );
+    
+    await addNotification(
+      AppNotification(
+        id: 3,
+        title: 'Production Complete',
+        message: 'Production of Mahogany Planks has been completed.',
+        timestamp: DateTime.now().subtract(const Duration(days: 1)),
+        type: NotificationType.productionUpdate,
+        isRead: false,
+      ),
+    );
+    
+    await addNotification(
+      AppNotification(
+        id: 4,
+        title: 'System Maintenance',
+        message: 'The system will be down for maintenance on Sunday from 2-4 AM.',
+        timestamp: DateTime.now().subtract(const Duration(days: 2)),
+        type: NotificationType.systemAlert,
+        isRead: false,
+      ),
+    );
   }
   
   // Dispose the service

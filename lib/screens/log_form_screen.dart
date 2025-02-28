@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/log.dart';
 import '../theme/app_theme.dart';
+import '../services/api_service.dart';
 
 class LogFormScreen extends StatefulWidget {
   final User? user;
@@ -65,18 +66,50 @@ class _LogFormScreenState extends State<LogFormScreen> {
     super.dispose();
   }
   
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Log saved successfully'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      
-      // Navigate back
-      Navigator.pop(context);
+      try {
+        // Create a Log object from form data
+        final log = Log(
+          logNumber: _logNumberController.text,
+          species: _speciesController.text,
+          diameter: double.parse(_diameterController.text),
+          length: double.parse(_lengthController.text),
+          quality: _qualityController.text,
+          source: _sourceController.text,
+          receivedDate: _receivedDateController.text,
+          status: _statusController.text,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
+        
+        // Save the log using the API service
+        final apiService = ApiService();
+        await apiService.addLog(log);
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Log saved successfully'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          // Navigate back to logs screen
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving log: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
   

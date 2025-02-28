@@ -431,7 +431,7 @@ class _OrderItemWidgetState extends State<OrderItemWidget> {
                     controller: _priceController,
                     decoration: const InputDecoration(
                       labelText: 'Unit Price',
-                      prefixText: '\$ ',
+                      prefixText: 'TSh ',
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
