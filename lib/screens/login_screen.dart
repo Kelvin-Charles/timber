@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
 import '../theme/app_theme.dart';
+import '../screens/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,17 +64,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       });
 
       try {
-        final success = await _apiService.simpleLogin(_usernameController.text, _passwordController.text);
-        if (success) {
-          // Navigate to dashboard using named route
-          if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        } else {
-          // Show error
-          setState(() {
-            _errorMessage = 'Login failed. Please check your credentials.';
-          });
-        }
+        final user = await _apiService.login(_usernameController.text, _passwordController.text);
+        
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DashboardScreen(user: user),
+          ),
+        );
       } catch (e) {
         setState(() {
           _errorMessage = e.toString();

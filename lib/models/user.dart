@@ -1,5 +1,5 @@
 class User {
-  final int? id;
+  final int id;
   final String username;
   final String email;
   final String role; // 'admin', 'manager', 'worker'
@@ -9,7 +9,7 @@ class User {
   final String? token;
 
   User({
-    this.id,
+    required this.id,
     required this.username,
     required this.email,
     required this.role,
@@ -23,7 +23,7 @@ class User {
     return User(
       id: json['id'] != null 
           ? (json['id'] is String ? int.tryParse(json['id']) : json['id']) 
-          : null,
+          : 0,
       username: json['username'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? '',

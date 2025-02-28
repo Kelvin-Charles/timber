@@ -1,24 +1,18 @@
 class Customer {
-  final int? id;
+  final int id;
   final String name;
   final String email;
-  final String? phoneNumber;
-  final String? address;
-  final String? company;
-  final String? notes;
-  final String createdDate;
+  final String phone;
+  final String address;
   final int totalOrders;
   final double? totalSpent;
-
+  
   Customer({
-    this.id,
+    required this.id,
     required this.name,
     required this.email,
-    this.phoneNumber,
-    this.address,
-    this.company,
-    this.notes,
-    required this.createdDate,
+    required this.phone,
+    required this.address,
     required this.totalOrders,
     this.totalSpent,
   });
@@ -28,11 +22,8 @@ class Customer {
       id: json['id'],
       name: json['name'],
       email: json['email'],
-      phoneNumber: json['phone_number'],
+      phone: json['phone'],
       address: json['address'],
-      company: json['company'],
-      notes: json['notes'],
-      createdDate: json['created_date'],
       totalOrders: json['total_orders'] ?? 0,
       totalSpent: json['total_spent'] != null 
           ? double.parse(json['total_spent'].toString())
@@ -45,11 +36,8 @@ class Customer {
       'id': id,
       'name': name,
       'email': email,
-      'phone_number': phoneNumber,
+      'phone': phone,
       'address': address,
-      'company': company,
-      'notes': notes,
-      'created_date': createdDate,
       'total_orders': totalOrders,
       'total_spent': totalSpent,
     };

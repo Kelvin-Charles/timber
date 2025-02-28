@@ -3,6 +3,9 @@ import '../theme/app_theme.dart';
 import '../models/user.dart';
 import '../utils/role_permissions.dart';
 import '../services/notification_service.dart';
+import '../widgets/app_drawer.dart';
+import '../widgets/role_based_action_button.dart';
+import '../widgets/notification_bell.dart';
 
 class DashboardScreen extends StatefulWidget {
   final User? user;
@@ -60,7 +63,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the user's role
+    final String userRole = widget.user?.role ?? 'worker';
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: const [
+          NotificationBell(),
+        ],
+      ),
+      drawer: AppDrawer(user: widget.user),
       body: RefreshIndicator(
         onRefresh: () async {
           // Implement refresh logic here
@@ -75,59 +88,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome card
+              // Welcome card - visible to all roles
               _buildWelcomeCard(),
               const SizedBox(height: 24),
               
-              // Quick stats
+              // Quick stats - visible to all roles
               _buildQuickStats(),
               const SizedBox(height: 24),
               
-              // Inventory summary
+              // Inventory summary - visible to all roles
               _buildSectionTitle('Inventory Summary'),
               _buildSummaryCards(_inventorySummary, Colors.blue),
               const SizedBox(height: 24),
               
-              // Logs summary
+              // Logs summary - visible to all roles
               _buildSectionTitle('Logs Summary'),
               _buildSummaryCards(_logsSummary, AppTheme.primaryColor),
               const SizedBox(height: 24),
               
-              // Production summary
+              // Production summary - visible to all roles
               _buildSectionTitle('Production Summary'),
               _buildSummaryCards(_productionSummary.map((key, value) => 
                 MapEntry(key, value.toInt())), AppTheme.secondaryColor),
               const SizedBox(height: 24),
               
-              // Recent orders
+              // Recent orders - visible to all roles
               _buildSectionTitle('Recent Orders'),
               _buildRecentOrders(),
 
-              // Admin and Director specific stats
-              if (RolePermissions.hasRole(widget.user?.role ?? '', 'admin')) {
-                _buildSectionTitle('System Statistics'),
-                _buildAdminStats(),
-                const SizedBox(height: 24),
-              }
-
-              // Director specific financial overview
-              if (RolePermissions.hasRole(widget.user?.role ?? '', 'director')) {
-                _buildSectionTitle('Financial Overview'),
-                _buildFinancialOverview(),
-                const SizedBox(height: 24),
-              }
+              // Admin-specific content
+              if (RolePermissions.hasRole(userRole, 'admin'))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Admin Controls'),
+                    _buildAdminControls(),
+                  ],
+                ),
+              
+              // Director-specific content
+              if (RolePermissions.hasRole(userRole, 'director'))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Financial Overview'),
+                    _buildFinancialOverview(),
+                  ],
+                ),
             ],
           ),
         ),
       ),
-      floatingActionButton: RoleBasedWidget(
-        userRole: widget.user?.role ?? '',
-        requiredRole: 'admin',
-        child: FloatingActionButton(
-          onPressed: _createSampleNotification,
-          tooltip: 'Create Sample Notification',
-          child: const Icon(Icons.notification_add),
-        ),
+      floatingActionButton: RoleBasedActionButton(
+        userRole: widget.user?.role ?? 'worker',
+        requiredPermission: 'logs_add',
+        onPressed: () {
+          _showAddActionDialog();
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -314,72 +334,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCards(Map<String, int> data, Color baseColor) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
+  Widget _buildSummaryCards(Map<String, int> data, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      itemCount: data.length,
-      itemBuilder: (context, index) {
-        final entry = data.entries.elementAt(index);
-        final opacity = 1.0 - (index * 0.2).clamp(0.0, 0.6);
-        
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: InkWell(
-            onTap: () {
-              // Navigate to detailed view
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Viewing details for ${entry.key}'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: baseColor.withOpacity(0.3),
-                  width: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: data.entries.map((entry) {
+            return InkWell(
+              onTap: () {
+                // Navigate based on card type
+                if (color == Colors.blue) {
+                  // Inventory cards
+                  Navigator.pushNamed(context, '/inventory', arguments: widget.user);
+                } else if (color == AppTheme.primaryColor) {
+                  // Logs cards
+                  Navigator.pushNamed(context, '/logs', arguments: widget.user);
+                } else if (color == AppTheme.secondaryColor) {
+                  // Production cards
+                  Navigator.pushNamed(context, '/production', arguments: widget.user);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withOpacity(0.5)),
+                      ),
+                      child: Text(
+                        entry.value.toString(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    entry.value.toString(),
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: baseColor.withOpacity(opacity),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    entry.key,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -389,99 +402,254 @@ class _DashboardScreenState extends State<DashboardScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _recentOrders.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final order = _recentOrders[index];
-          
-          // Determine status color
-          Color statusColor;
-          switch (order['status']) {
-            case 'Delivered':
-              statusColor = Colors.green;
-              break;
-            case 'Processing':
-              statusColor = Colors.blue;
-              break;
-            case 'Pending':
-              statusColor = Colors.orange;
-              break;
-            default:
-              statusColor = Colors.grey;
-          }
-          
-          return ListTile(
-            onTap: () {
-              // Navigate to order details
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Viewing order ${order['id']}'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-            title: Text(
-              order['customer'],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              '${order['id']} • ${order['date']}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '\$${order['amount'].toStringAsFixed(2)}',
-                  style: const TextStyle(
+                const Text(
+                  'Recent Orders',
+                  style: TextStyle(
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    order['status'],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/orders', arguments: widget.user);
+                  },
+                  child: const Text('View All'),
                 ),
               ],
             ),
-          );
-        },
+            const Divider(),
+            ..._recentOrders.map((order) {
+              return InkWell(
+                onTap: () {
+                  // Navigate to order details
+                  Navigator.pushNamed(
+                    context, 
+                    '/orders/details', 
+                    arguments: {'user': widget.user, 'orderId': order['id']},
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          order['id'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(order['customer']),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text('\$${order['amount'].toStringAsFixed(2)}'),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(order['status']).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            order['status'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _getStatusColor(order['status']),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAdminStats() {
-    // Admin-specific statistics
-    final Map<String, int> adminStats = {
-      'Total Users': 12,
-      'Active Sessions': 5,
-      'System Alerts': 2,
-    };
-    
-    return _buildSummaryCards(adminStats, AppTheme.infoColor);
+  Widget _buildAdminControls() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'System Management',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // User statistics
+            Row(
+              children: [
+                _buildAdminStatCard(
+                  'Total Users',
+                  '12',
+                  Icons.people,
+                  Colors.blue,
+                ),
+                const SizedBox(width: 12),
+                _buildAdminStatCard(
+                  'Active Sessions',
+                  '5',
+                  Icons.devices,
+                  Colors.green,
+                ),
+                const SizedBox(width: 12),
+                _buildAdminStatCard(
+                  'System Alerts',
+                  '2',
+                  Icons.warning,
+                  Colors.orange,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Admin action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildAdminActionButton(
+                  'User Management',
+                  Icons.manage_accounts,
+                  () {
+                    Navigator.pushNamed(context, '/users');
+                  },
+                ),
+                _buildAdminActionButton(
+                  'System Settings',
+                  Icons.settings,
+                  () {
+                    Navigator.pushNamed(context, '/settings');
+                  },
+                ),
+                _buildAdminActionButton(
+                  'Backup Data',
+                  Icons.backup,
+                  () {
+                    _showBackupDialog();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminStatCard(String title, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminActionButton(String label, IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.primaryColor),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBackupDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Backup System Data'),
+        content: const Text('Do you want to create a backup of all system data?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Backup started. This may take a few minutes.'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('BACKUP'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFinancialOverview() {
@@ -581,5 +749,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  void _showAddActionDialog() {
+    final String userRole = widget.user?.role ?? 'worker';
+    final Map<String, bool> permissions = RolePermissions.getPermissions(userRole);
+    
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Add New'),
+        children: [
+          if (permissions['logs_add'] == true)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/logs/add');
+              },
+              child: const ListTile(
+                leading: Icon(Icons.forest),
+                title: Text('New Log'),
+              ),
+            ),
+          
+          if (permissions['inventory_add'] == true)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/inventory/add');
+              },
+              child: const ListTile(
+                leading: Icon(Icons.inventory),
+                title: Text('New Inventory Item'),
+              ),
+            ),
+          
+          if (permissions['production_add'] == true)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/production/add');
+              },
+              child: const ListTile(
+                leading: Icon(Icons.precision_manufacturing),
+                title: Text('New Production'),
+              ),
+            ),
+          
+          if (permissions['customers_add'] == true)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/customers/add');
+              },
+              child: const ListTile(
+                leading: Icon(Icons.people),
+                title: Text('New Customer'),
+              ),
+            ),
+          
+          if (permissions['orders_add'] == true)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/orders/add');
+              },
+              child: const ListTile(
+                leading: Icon(Icons.shopping_cart),
+                title: Text('New Order'),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Delivered':
+        return Colors.green;
+      case 'Processing':
+        return Colors.blue;
+      case 'Pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 } 

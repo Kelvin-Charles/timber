@@ -4,111 +4,109 @@ class RolePermissions {
   
   // Check if a user has a specific role
   static bool hasRole(String userRole, String requiredRole) {
-    if (!_roleHierarchy.contains(userRole) || !_roleHierarchy.contains(requiredRole)) {
-      return false;
-    }
+    if (userRole == requiredRole) return true;
     
-    int userRoleIndex = _roleHierarchy.indexOf(userRole);
-    int requiredRoleIndex = _roleHierarchy.indexOf(requiredRole);
+    // Admin has all permissions
+    if (userRole == 'admin') return true;
     
-    return userRoleIndex >= requiredRoleIndex;
+    // Director has most permissions except admin-specific ones
+    if (userRole == 'director' && requiredRole != 'admin') return true;
+    
+    // Manager has permissions for operations but not for admin/director functions
+    if (userRole == 'manager' && 
+        (requiredRole != 'admin' && requiredRole != 'director')) return true;
+    
+    return false;
   }
   
   // Get permissions for each role
   static Map<String, bool> getPermissions(String role) {
-    // Default permissions (all false)
-    Map<String, bool> permissions = {
-      // Inventory permissions
-      'inventory_view': false,
-      'inventory_add': false,
-      'inventory_edit': false,
-      'inventory_delete': false,
-      
-      // Log tracking permissions
-      'logs_view': false,
-      'logs_add': false,
-      'logs_edit': false,
-      'logs_delete': false,
-      
-      // Production permissions
-      'production_view': false,
-      'production_add': false,
-      'production_edit': false,
-      'production_delete': false,
-      
-      // Customer permissions
-      'customers_view': false,
-      'customers_add': false,
-      'customers_edit': false,
-      'customers_delete': false,
-      
-      // Order permissions
-      'orders_view': false,
-      'orders_add': false,
-      'orders_edit': false,
-      'orders_delete': false,
-      
-      // User management permissions
-      'users_view': false,
-      'users_add': false,
-      'users_edit': false,
-      'users_delete': false,
-      
-      // Reports permissions
+    final Map<String, bool> permissions = {
+      // View permissions
+      'logs_view': true,
+      'inventory_view': true,
+      'production_view': true,
+      'customers_view': true,
+      'orders_view': true,
       'reports_view': false,
-      'reports_export': false,
-      
-      // Settings permissions
+      'users_view': false,
       'settings_view': false,
-      'settings_edit': false,
+      
+      // Add permissions
+      'logs_add': false,
+      'inventory_add': false,
+      'production_add': false,
+      'customers_add': false,
+      'orders_add': false,
+      'users_add': false,
+      
+      // Edit permissions
+      'logs_edit': false,
+      'inventory_edit': false,
+      'production_edit': false,
+      'customers_edit': false,
+      'orders_edit': false,
+      'users_edit': false,
+      
+      // Delete permissions
+      'logs_delete': false,
+      'inventory_delete': false,
+      'production_delete': false,
+      'customers_delete': false,
+      'orders_delete': false,
+      'users_delete': false,
     };
     
-    // Worker permissions
-    if (hasRole(role, 'worker')) {
-      permissions['inventory_view'] = true;
-      permissions['logs_view'] = true;
-      permissions['production_view'] = true;
-      permissions['customers_view'] = true;
-      permissions['orders_view'] = true;
-    }
-    
-    // Manager permissions
-    if (hasRole(role, 'manager')) {
-      // All worker permissions plus:
-      permissions['inventory_add'] = true;
-      permissions['inventory_edit'] = true;
+    // Worker permissions (basic view only)
+    if (role == 'worker') {
+      // Workers already have basic view permissions
       permissions['logs_add'] = true;
-      permissions['logs_edit'] = true;
-      permissions['production_add'] = true;
       permissions['production_edit'] = true;
+    }
+    
+    // Manager permissions (operations)
+    else if (role == 'manager') {
+      // Add permissions
+      permissions['logs_add'] = true;
+      permissions['inventory_add'] = true;
+      permissions['production_add'] = true;
       permissions['customers_add'] = true;
-      permissions['customers_edit'] = true;
       permissions['orders_add'] = true;
+      
+      // Edit permissions
+      permissions['logs_edit'] = true;
+      permissions['inventory_edit'] = true;
+      permissions['production_edit'] = true;
+      permissions['customers_edit'] = true;
       permissions['orders_edit'] = true;
-      permissions['reports_view'] = true;
-      permissions['reports_export'] = true;
-    }
-    
-    // Admin permissions
-    if (hasRole(role, 'admin')) {
-      // All manager permissions plus:
-      permissions['inventory_delete'] = true;
+      
+      // Delete permissions
       permissions['logs_delete'] = true;
+      permissions['inventory_delete'] = true;
       permissions['production_delete'] = true;
-      permissions['customers_delete'] = true;
-      permissions['orders_delete'] = true;
-      permissions['users_view'] = true;
-      permissions['users_add'] = true;
-      permissions['users_edit'] = true;
-      permissions['settings_view'] = true;
-      permissions['settings_edit'] = true;
+      
+      // View permissions
+      permissions['reports_view'] = true;
     }
     
-    // Director permissions
-    if (hasRole(role, 'director')) {
-      // All admin permissions plus:
-      permissions['users_delete'] = true;
-      // Any additional director-specific permissions
+    // Director permissions (everything except user management)
+    else if (role == 'director') {
+      // All permissions except user management
+      permissions.forEach((key, value) {
+        permissions[key] = true;
+      });
+      
+      // Restrict user management
+      permissions['users_add'] = false;
+      permissions['users_edit'] = false;
+      permissions['users_delete'] = false;
+    }
+    
+    // Admin permissions (everything)
+    else if (role == 'admin') {
+      permissions.forEach((key, value) {
+        permissions[key] = true;
+      });
     }
     
     return permissions;

@@ -6,8 +6,8 @@ class Log {
   final double length;
   final String quality;
   final String source;
-  final String status;
   final String receivedDate;
+  final String status;
   final String? notes;
 
   Log({
@@ -18,8 +18,8 @@ class Log {
     required this.length,
     required this.quality,
     required this.source,
-    required this.status,
     required this.receivedDate,
+    required this.status,
     this.notes,
   });
 
@@ -32,8 +32,8 @@ class Log {
       length: double.parse(json['length'].toString()),
       quality: json['quality'],
       source: json['source'],
-      status: json['status'],
       receivedDate: json['received_date'],
+      status: json['status'],
       notes: json['notes'],
     );
   }
@@ -47,8 +47,8 @@ class Log {
       'length': length,
       'quality': quality,
       'source': source,
-      'status': status,
       'received_date': receivedDate,
+      'status': status,
       'notes': notes,
     };
   }

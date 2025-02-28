@@ -70,6 +70,8 @@ class NotificationService {
   
   // Mark all notifications as read
   Future<void> markAllAsRead() async {
+    // Simulate API call to mark all notifications as read
+    await Future.delayed(const Duration(milliseconds: 500));
     _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
     _notificationsController.add(_notifications);
     await _saveNotifications();
@@ -90,7 +92,11 @@ class NotificationService {
   }
   
   // Get unread count
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  Future<int> getUnreadCount() async {
+    // Simulate API call to get unread notifications count
+    await Future.delayed(const Duration(milliseconds: 300));
+    return _notifications.where((n) => !n.isRead).length;
+  }
   
   // Get all notifications
   List<AppNotification> get notifications => _notifications;

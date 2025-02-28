@@ -10,6 +10,15 @@ import '../models/order.dart';
 import '../services/notification_service.dart';
 
 class ApiService {
+  // Singleton pattern
+  static final ApiService _instance = ApiService._internal();
+  
+  factory ApiService() {
+    return _instance;
+  }
+  
+  ApiService._internal();
+  
   // Update the baseUrl to point to your domain
   static const String baseUrl = 'https://timber.furahinisafariadevntures.agency/api';
   
@@ -28,52 +37,25 @@ class ApiService {
     };
   }
   
-  // User Authentication
+  // Authentication methods
   Future<User> login(String username, String password) async {
-    try {
-      print('Attempting login for user: $username');
-      final response = await http.post(
-        Uri.parse('$baseUrl/login.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-        }),
-      );
-      
-      print('Login response status: ${response.statusCode}');
-      print('Login response body: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        final userData = json.decode(response.body);
-        
-        // Save token to shared preferences
-        if (userData['token'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', userData['token']);
-        }
-        
-        // Check if all required fields are present
-        if (userData['username'] == null || userData['email'] == null || userData['role'] == null) {
-          throw Exception('Invalid user data received from server');
-        }
-        
-        return User.fromJson(userData);
-      } else {
-        throw Exception('Login failed: ${response.statusCode}, ${response.body}');
-      }
-    } catch (e) {
-      print('Login error: $e');
-      if (e.toString().contains("type 'String' is not a subtype of type 'int?'")) {
-        print('Type conversion error detected. Check the User.fromJson method.');
-      }
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return a mock user
+    return User(
+      id: 1,
+      username: username,
+      email: '$username@example.com',
+      role: username == 'admin' ? 'admin' : (username == 'manager' ? 'manager' : 'worker'),
+      fullName: username.toUpperCase(),
+    );
   }
   
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+  Future<bool> logout() async {
+    // Simulate API call
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
   }
   
   Future<User> register(
@@ -108,24 +90,24 @@ class ApiService {
     }
   }
   
-  // Log Management
+  // Logs methods
   Future<List<Log>> getLogs() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/logs.php'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Log.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load logs: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock logs
+    return List.generate(10, (index) => Log(
+      id: index + 1,
+      logNumber: 'LOG${1000 + index}',
+      species: index % 2 == 0 ? 'Pine' : 'Cedar',
+      diameter: 30 + (index * 2),
+      length: 4 + (index % 3),
+      quality: index % 3 == 0 ? 'A' : (index % 3 == 1 ? 'B' : 'C'),
+      source: 'Supplier ${index % 5 + 1}',
+      receivedDate: DateTime.now().subtract(Duration(days: index * 3)).toString().substring(0, 10),
+      status: index % 4 == 0 ? 'Available' : (index % 4 == 1 ? 'In Production' : (index % 4 == 2 ? 'Sold' : 'Damaged')),
+      notes: index % 3 == 0 ? 'Good quality log' : null,
+    ));
   }
   
   Future<Log> getLog(int id) async {
@@ -200,24 +182,21 @@ class ApiService {
     }
   }
   
-  // Inventory Management
+  // Inventory methods
   Future<List<InventoryItem>> getInventory() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/inventory.php'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => InventoryItem.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load inventory: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock inventory items
+    return List.generate(15, (index) => InventoryItem(
+      id: index + 1,
+      name: 'Item ${index + 1}',
+      category: index % 3 == 0 ? 'Raw Material' : (index % 3 == 1 ? 'Finished Product' : 'Tool'),
+      quantity: 10 + (index * 5),
+      unit: index % 2 == 0 ? 'pcs' : 'kg',
+      price: index % 3 == 0 ? null : (50.0 + (index * 10)),
+      status: index % 4 == 0 ? 'In Stock' : (index % 4 == 1 ? 'Low Stock' : (index % 4 == 2 ? 'Out of Stock' : 'Discontinued')),
+    ));
   }
   
   Future<InventoryItem> getInventoryItem(int id) async {
@@ -295,24 +274,21 @@ class ApiService {
     }
   }
   
-  // Production Management
+  // Production methods
   Future<List<Production>> getProductions() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/productions.php'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Production.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load productions: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock production records
+    return List.generate(8, (index) => Production(
+      id: index + 1,
+      productName: 'Product ${index + 1}',
+      startDate: DateTime.now().subtract(Duration(days: 30 - index * 3)).toString().substring(0, 10),
+      endDate: index % 3 == 0 ? null : DateTime.now().add(Duration(days: index * 5)).toString().substring(0, 10),
+      status: index % 4 == 0 ? 'not_started' : (index % 4 == 1 ? 'in_progress' : (index % 4 == 2 ? 'on_hold' : 'completed')),
+      currentStage: index % 3 == 0 ? 'Planning' : (index % 3 == 1 ? 'Production' : 'Quality Check'),
+      completionPercentage: index * 12.5,
+    ));
   }
   
   Future<Production> getProduction(int id) async {
@@ -387,24 +363,21 @@ class ApiService {
     }
   }
   
-  // Customer Management
+  // Customer methods
   Future<List<Customer>> getCustomers() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/customers.php'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Customer.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load customers: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock customers
+    return List.generate(12, (index) => Customer(
+      id: index + 1,
+      name: 'Customer ${index + 1}',
+      email: 'customer${index + 1}@example.com',
+      phone: '+254 7${index}${index} ${index}00 ${index}00',
+      address: 'Address ${index + 1}',
+      totalOrders: index + 1,
+      totalSpent: (index + 1) * 1000.0,
+    ));
   }
   
   Future<Customer> getCustomer(int id) async {
@@ -463,24 +436,26 @@ class ApiService {
     }
   }
   
-  // Order Management
+  // Order methods
   Future<List<Order>> getOrders() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/orders.php'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Order.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load orders: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to connect to server: $e');
-    }
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock orders
+    return List.generate(10, (index) => Order(
+      id: 'ORD-${1000 + index}',
+      customerId: index % 5 + 1,
+      orderDate: DateTime.now().subtract(Duration(days: index * 3)).toString().substring(0, 10),
+      deliveryDate: index % 3 == 0 ? null : DateTime.now().add(Duration(days: 7 + index)).toString().substring(0, 10),
+      status: index % 5 == 0 ? 'Pending' : (index % 5 == 1 ? 'Processing' : (index % 5 == 2 ? 'Shipped' : (index % 5 == 3 ? 'Delivered' : 'Cancelled'))),
+      totalAmount: 500.0 + (index * 250),
+      paymentStatus: index % 3 == 0 ? 'Pending' : (index % 3 == 1 ? 'Partial' : 'Paid'),
+      items: List.generate(index % 3 + 1, (i) => OrderItem(
+        productId: i + 1,
+        quantity: i + 1,
+        unitPrice: 100.0 + (i * 50),
+      )),
+    ));
   }
   
   Future<Order> getOrder(int id) async {
@@ -556,5 +531,19 @@ class ApiService {
       print('Simple login error: $e');
       return false;
     }
+  }
+  
+  Future<List<User>> getUsers() async {
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Return mock users
+    return List.generate(8, (index) => User(
+      id: index + 1,
+      username: 'user${index + 1}',
+      email: 'user${index + 1}@example.com',
+      role: index == 0 ? 'admin' : (index == 1 ? 'director' : (index < 4 ? 'manager' : 'worker')),
+      fullName: 'User ${index + 1}',
+    ));
   }
 } 
