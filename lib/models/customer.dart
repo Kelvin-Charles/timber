@@ -1,33 +1,34 @@
 class Customer {
-  final int id;
+  final String id;
   final String name;
   final String email;
   final String phone;
-  final String address;
-  final int totalOrders;
-  final double? totalSpent;
-  
+  final String? address;
+  final String? notes;
+  final String? createdAt;
+  final String? updatedAt;
+
   Customer({
     required this.id,
     required this.name,
     required this.email,
     required this.phone,
-    required this.address,
-    required this.totalOrders,
-    this.totalSpent,
+    this.address,
+    this.notes,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
+      id: json['id'].toString(),
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
       address: json['address'],
-      totalOrders: json['total_orders'] ?? 0,
-      totalSpent: json['total_spent'] != null 
-          ? double.parse(json['total_spent'].toString())
-          : null,
+      notes: json['notes'],
+      createdAt: json['created_at'],
+      updatedAt: json['updated_at'],
     );
   }
 
@@ -38,8 +39,9 @@ class Customer {
       'email': email,
       'phone': phone,
       'address': address,
-      'total_orders': totalOrders,
-      'total_spent': totalSpent,
+      'notes': notes,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 } 
